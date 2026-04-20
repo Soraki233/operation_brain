@@ -1,0 +1,122 @@
+/* ============================================================
+ * OpsBrain · Global utility classes & visual tokens
+ * Works on top of shadcn-vue theme variables.
+ * ==========================================================*/
+
+@layer utilities {
+  /* Scrollbar — lightweight, product-grade */
+  .ob-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 25%, transparent) transparent;
+  }
+  .ob-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .ob-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .ob-scrollbar::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklab, var(--muted-foreground) 20%, transparent);
+    border-radius: 999px;
+  }
+  .ob-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+  }
+
+  /* Card hover — elevation + ring */
+  .card-hover {
+    @apply transition-all duration-200 ease-out;
+  }
+  .card-hover:hover {
+    box-shadow:
+      0 1px 0 0 color-mix(in oklab, var(--border) 100%, transparent),
+      0 10px 30px -12px color-mix(in oklab, var(--foreground) 10%, transparent);
+    border-color: color-mix(in oklab, var(--brand) 40%, var(--border));
+  }
+
+  /* Surface with soft blur */
+  .glass-surface {
+    background-color: color-mix(in oklab, var(--card) 80%, transparent);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+  }
+
+  /* Subtle section panel */
+  .panel {
+    @apply rounded-xl border bg-card;
+    box-shadow: 0 1px 2px color-mix(in oklab, var(--foreground) 3%, transparent);
+  }
+
+  /* Shimmer for skeletons */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+    background-color: color-mix(in oklab, var(--muted) 100%, transparent);
+  }
+  .shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in oklab, var(--foreground) 5%, transparent) 50%,
+      transparent 100%
+    );
+    transform: translateX(-100%);
+    animation: ob-shimmer 1.4s infinite;
+  }
+  @keyframes ob-shimmer {
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Status pill base */
+  .status-pill {
+    @apply inline-flex h-6 items-center gap-1.5 rounded-full px-2 text-xs font-medium;
+  }
+  .status-dot {
+    @apply inline-block h-1.5 w-1.5 rounded-full;
+  }
+
+  /* Focus ring override for custom clickable elements */
+  .ob-focus {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-0;
+  }
+
+  /* Route transition — fade slide */
+  .fade-slide-enter-active,
+  .fade-slide-leave-active {
+    transition:
+      opacity 180ms ease,
+      transform 220ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .fade-slide-enter-from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  .fade-slide-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  /* Brand gradient (for hero / highlights) */
+  .brand-gradient {
+    background-image: linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--brand) 96%, transparent) 0%,
+      color-mix(in oklab, var(--chart-2) 90%, transparent) 100%
+    );
+  }
+
+  /* Dotted grid background */
+  .bg-dotgrid {
+    background-image: radial-gradient(
+      color-mix(in oklab, var(--muted-foreground) 18%, transparent) 1px,
+      transparent 1px
+    );
+    background-size: 18px 18px;
+  }
+}
