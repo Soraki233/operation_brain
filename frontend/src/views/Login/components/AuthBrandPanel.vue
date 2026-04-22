@@ -20,7 +20,7 @@ const highlights = [
 </script>
 
 <template>
-  <div class="relative hidden lg:flex flex-col justify-between p-10 overflow-hidden">
+  <div class="relative hidden lg:flex flex-col justify-between p-10 overflow-hidden h-full min-h-screen">
     <div class="absolute inset-0 brand-gradient" />
     <div class="absolute inset-0 bg-dotgrid opacity-25" />
     <div class="absolute -top-32 -right-24 size-96 rounded-full bg-white/10 blur-3xl" />

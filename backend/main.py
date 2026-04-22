@@ -1,10 +1,15 @@
 from fastapi import FastAPI
+from core.config import config
+from api.user import user_router
 
 app = FastAPI()
+
+app.include_router(user_router)
 
 
 @app.get("/")
 def read_root():
+    print(config.app.APP_NAME)
     return {"Hello": "World"}
 
 

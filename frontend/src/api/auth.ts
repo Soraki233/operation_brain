@@ -9,9 +9,9 @@ async function mockLogin(payload: LoginPayload): Promise<LoginResult> {
     token: 'mock-token-' + Date.now(),
     user: {
       id: 'u-1',
-      username: payload.account,
-      nickname: payload.account || '李建国',
-      email: `${payload.account}@wte-plant.cn`,
+      username: payload.phone,
+      nickname: '李建国',
+      email: `${payload.phone}@wte-plant.cn`,
       role: 'admin',
       orgName: '清源垃圾焚烧发电厂 · 运行部',
     },

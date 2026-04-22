@@ -9,14 +9,15 @@ export interface UserProfile {
 }
 
 export interface LoginPayload {
-  account: string
+  phone: string
   password: string
   remember?: boolean
 }
 
 export interface RegisterPayload {
   username: string
-  email: string
+  phone: string
+  verificationCode: string
   password: string
   confirmPassword?: string
 }

@@ -8,13 +8,14 @@ import * as z from 'zod'
 import {
   Flame,
   User,
-  Mail,
+  Phone,
+  ShieldCheck,
   Lock,
   Eye,
   EyeOff,
   Loader2,
   AlertCircle,
-  ShieldCheck,
+  MessageSquare,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,15 +35,22 @@ const schema = toTypedSchema(
       username: z
         .string()
         .min(1, '请输入用户名')
-        .min(2, '用户名至少 2 位')
+        .min(3, '用户名至少 3 位')
         .max(32, '用户名最多 32 位'),
-      email: z.string().min(1, '请输入邮箱').email('邮箱格式不正确'),
+      phone: z
+        .string()
+        .min(1, '请输入手机号')
+        .regex(/^1[3-9]\d{9}$/, '请输入正确的手机号'),
+      verificationCode: z
+        .string()
+        .min(1, '请输入验证码')
+        .length(6, '验证码为 6 位数字')
+        .regex(/^\d{6}$/, '验证码为 6 位数字'),
       password: z
         .string()
         .min(1, '请输入密码')
-        .min(8, '密码至少 8 位')
-        .regex(/[a-zA-Z]/, '密码需要包含字母')
-        .regex(/\d/, '密码需要包含数字'),
+        .min(6, '密码至少 6 位')
+        .max(12, '密码最多 12 位'),
       confirmPassword: z.string().min(1, '请再次输入密码'),
       agreed: z.boolean().refine((v) => v === true, {
         message: '请先同意服务条款与隐私政策',
@@ -58,7 +66,8 @@ const { handleSubmit, errors, defineField } = useForm({
   validationSchema: schema,
   initialValues: {
     username: '',
-    email: '',
+    phone: '',
+    verificationCode: '',
     password: '',
     confirmPassword: '',
     agreed: false,
@@ -66,7 +75,8 @@ const { handleSubmit, errors, defineField } = useForm({
 })
 
 const [username, usernameAttrs] = defineField('username')
-const [email, emailAttrs] = defineField('email')
+const [phone, phoneAttrs] = defineField('phone')
+const [verificationCode, verificationCodeAttrs] = defineField('verificationCode')
 const [password, passwordAttrs] = defineField('password')
 const [confirmPassword, confirmPasswordAttrs] = defineField('confirmPassword')
 const [agreed] = defineField('agreed')
@@ -76,16 +86,43 @@ const showConfirm = ref(false)
 const loading = ref(false)
 const serverError = ref<string | null>(null)
 
+const codeSending = ref(false)
+const codeCountdown = ref(0)
+let countdownTimer: ReturnType<typeof setInterval> | null = null
+
+async function sendCode() {
+  if (!phone.value || !/^1[3-9]\d{9}$/.test(phone.value)) {
+    toast.error('请先输入正确的手机号')
+    return
+  }
+  codeSending.value = true
+  try {
+    await new Promise((r) => setTimeout(r, 600))
+    toast.success(`验证码已发送至 ${phone.value}`)
+    codeCountdown.value = 60
+    countdownTimer = setInterval(() => {
+      codeCountdown.value--
+      if (codeCountdown.value <= 0) {
+        clearInterval(countdownTimer!)
+        countdownTimer = null
+      }
+    }, 1000)
+  } finally {
+    codeSending.value = false
+  }
+}
+
 const onSubmit = handleSubmit(async (values) => {
   loading.value = true
   serverError.value = null
   try {
     await authApi.register({
       username: values.username,
-      email: values.email,
+      phone: values.phone,
+      verificationCode: values.verificationCode,
       password: values.password,
     })
-    toast.success('注册成功，请使用新账号登录')
+    toast.success('注册成功，请使用手机号登录')
     router.push('/login')
   } catch (e) {
     const msg = e instanceof Error ? e.message : '注册失败，请稍后重试'
@@ -103,7 +140,9 @@ const onSubmit = handleSubmit(async (values) => {
       <Card class="w-full max-w-md border-none shadow-none bg-transparent">
         <CardContent class="p-0">
           <div class="lg:hidden mb-6 flex items-center gap-2">
-            <div class="flex size-9 items-center justify-center rounded-lg brand-gradient text-brand-foreground">
+            <div
+              class="flex size-9 items-center justify-center rounded-lg brand-gradient text-brand-foreground"
+            >
               <Flame class="size-5" />
             </div>
             <span class="text-lg font-semibold tracking-tight">OpsBrain</span>
@@ -122,12 +161,14 @@ const onSubmit = handleSubmit(async (values) => {
             <span>{{ serverError }}</span>
           </div>
 
-          <form class="mt-6 space-y-4" novalidate @submit="onSubmit">
-            <!-- Username -->
+          <form class="mt-7 space-y-3.5" novalidate @submit="onSubmit">
+            <!-- 用户名 -->
             <div class="space-y-1.5">
               <Label for="username">用户名</Label>
               <div class="relative">
-                <User class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <User
+                  class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"
+                />
                 <Input
                   id="username"
                   v-model="username"
@@ -135,43 +176,93 @@ const onSubmit = handleSubmit(async (values) => {
                   placeholder="建议使用真实姓名，便于同事识别"
                   class="h-10 pl-9"
                   :class="cn(errors.username && 'border-destructive focus-visible:ring-destructive/40')"
+                  autocomplete="username"
                 />
               </div>
               <p v-if="errors.username" class="text-xs text-destructive">{{ errors.username }}</p>
             </div>
 
-            <!-- Email -->
+            <!-- 手机号 -->
             <div class="space-y-1.5">
-              <Label for="email">邮箱</Label>
+              <Label for="phone">手机号</Label>
               <div class="relative">
-                <Mail class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Phone
+                  class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"
+                />
                 <Input
-                  id="email"
-                  v-model="email"
-                  v-bind="emailAttrs"
-                  type="email"
-                  placeholder="name@wte-plant.cn"
+                  id="phone"
+                  v-model="phone"
+                  v-bind="phoneAttrs"
+                  type="tel"
+                  placeholder="请输入手机号"
                   class="h-10 pl-9"
-                  :class="cn(errors.email && 'border-destructive focus-visible:ring-destructive/40')"
-                  autocomplete="email"
+                  :class="cn(errors.phone && 'border-destructive focus-visible:ring-destructive/40')"
+                  autocomplete="tel"
+                  maxlength="11"
                 />
               </div>
-              <p v-if="errors.email" class="text-xs text-destructive">{{ errors.email }}</p>
+              <p v-if="errors.phone" class="text-xs text-destructive">{{ errors.phone }}</p>
             </div>
 
-            <!-- Password -->
+            <!-- 验证码 -->
+            <div class="space-y-1.5">
+              <Label for="verificationCode">验证码</Label>
+              <div class="flex gap-2">
+                <div class="relative flex-1">
+                  <MessageSquare
+                    class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"
+                  />
+                  <Input
+                    id="verificationCode"
+                    v-model="verificationCode"
+                    v-bind="verificationCodeAttrs"
+                    type="text"
+                    placeholder="请输入 6 位验证码"
+                    class="h-10 pl-9"
+                    :class="
+                      cn(
+                        errors.verificationCode &&
+                          'border-destructive focus-visible:ring-destructive/40',
+                      )
+                    "
+                    maxlength="6"
+                    inputmode="numeric"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  class="h-10 shrink-0 min-w-24 text-sm"
+                  :disabled="codeSending || codeCountdown > 0"
+                  @click="sendCode"
+                >
+                  <Loader2 v-if="codeSending" class="size-3.5 animate-spin" />
+                  <span v-else-if="codeCountdown > 0">{{ codeCountdown }}s 后重发</span>
+                  <span v-else>获取验证码</span>
+                </Button>
+              </div>
+              <p v-if="errors.verificationCode" class="text-xs text-destructive">
+                {{ errors.verificationCode }}
+              </p>
+            </div>
+
+            <!-- 密码 -->
             <div class="space-y-1.5">
               <Label for="password">密码</Label>
               <div class="relative">
-                <Lock class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Lock
+                  class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"
+                />
                 <Input
                   id="password"
                   v-model="password"
                   v-bind="passwordAttrs"
                   :type="showPwd ? 'text' : 'password'"
-                  placeholder="至少 8 位，包含字母和数字"
+                  placeholder="6-12 位，包含字母和数字"
                   class="h-10 pl-9 pr-10"
-                  :class="cn(errors.password && 'border-destructive focus-visible:ring-destructive/40')"
+                  :class="
+                    cn(errors.password && 'border-destructive focus-visible:ring-destructive/40')
+                  "
                   autocomplete="new-password"
                 />
                 <button
@@ -190,11 +281,13 @@ const onSubmit = handleSubmit(async (values) => {
               <PasswordStrength v-else :value="password ?? ''" />
             </div>
 
-            <!-- Confirm password -->
+            <!-- 确认密码 -->
             <div class="space-y-1.5">
               <Label for="confirm">确认密码</Label>
               <div class="relative">
-                <Lock class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Lock
+                  class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none"
+                />
                 <Input
                   id="confirm"
                   v-model="confirmPassword"
@@ -202,7 +295,12 @@ const onSubmit = handleSubmit(async (values) => {
                   :type="showConfirm ? 'text' : 'password'"
                   placeholder="再次输入密码"
                   class="h-10 pl-9 pr-10"
-                  :class="cn(errors.confirmPassword && 'border-destructive focus-visible:ring-destructive/40')"
+                  :class="
+                    cn(
+                      errors.confirmPassword &&
+                        'border-destructive focus-visible:ring-destructive/40',
+                    )
+                  "
                   autocomplete="new-password"
                 />
                 <button
@@ -220,10 +318,12 @@ const onSubmit = handleSubmit(async (values) => {
               </p>
             </div>
 
-            <!-- Agreement -->
+            <!-- 服务条款 -->
             <div>
-              <label class="flex items-start gap-2 text-xs text-muted-foreground select-none cursor-pointer">
-                <Checkbox v-model="agreed" class="mt-0.5" />
+              <label
+                class="flex items-center gap-2 text-sm text-muted-foreground select-none cursor-pointer"
+              >
+                <Checkbox v-model="agreed" />
                 <span>
                   我已阅读并同意
                   <a class="text-brand hover:underline cursor-pointer">《服务条款》</a>
@@ -240,24 +340,26 @@ const onSubmit = handleSubmit(async (values) => {
               <Loader2 v-if="loading" class="size-4 animate-spin" />
               {{ loading ? '注册中…' : '创建账号' }}
             </Button>
-
-            <div class="flex items-center gap-1.5 text-[11px] text-muted-foreground justify-center">
-              <ShieldCheck class="size-3 text-success" />
-              账号仅用于厂内知识库访问，不会对外共享
-            </div>
           </form>
+
+          <div class="mt-4 flex items-center gap-1.5 text-[11px] text-muted-foreground justify-center">
+            <ShieldCheck class="size-3 text-success" />
+            账号仅用于厂内知识库访问，不会对外共享
+          </div>
 
           <p class="mt-6 text-center text-sm text-muted-foreground">
             已有账号？
-            <RouterLink to="/login" class="text-brand font-medium hover:underline">立即登录</RouterLink>
+            <RouterLink to="/login" class="text-brand font-medium hover:underline">
+              立即登录
+            </RouterLink>
           </p>
         </CardContent>
       </Card>
     </div>
 
-    <div class="order-1 lg:order-2">
+    <div class="order-1 lg:order-2 flex flex-col">
       <AuthBrandPanel
-        title="让规程真正\n跟着值班走"
+        :title="`让规程真正\n跟着值班走`"
         subtitle="开通账号后，你可以把常用的处置卡、规程、案例上传上来，下一次值班就能直接问 AI 拿到带出处的答案。"
       />
     </div>

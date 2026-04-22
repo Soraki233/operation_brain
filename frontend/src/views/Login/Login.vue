@@ -7,7 +7,7 @@ import { toTypedSchema } from '@vee-validate/zod'
 import * as z from 'zod'
 import {
   Flame,
-  IdCard,
+  Phone,
   Lock,
   Eye,
   EyeOff,
@@ -28,11 +28,10 @@ const auth = useAuthStore()
 
 const schema = toTypedSchema(
   z.object({
-    account: z
+    phone: z
       .string()
-      .min(1, '请输入账号')
-      .min(3, '账号至少 3 位')
-      .max(64, '账号最多 64 位'),
+      .min(1, '请输入手机号')
+      .regex(/^1[3-9]\d{9}$/, '请输入正确的手机号'),
     password: z
       .string()
       .min(1, '请输入密码')
@@ -44,10 +43,10 @@ const schema = toTypedSchema(
 
 const { handleSubmit, errors, defineField, setFieldValue, isSubmitting } = useForm({
   validationSchema: schema,
-  initialValues: { account: '', password: '', remember: true },
+  initialValues: { phone: '', password: '', remember: true },
 })
 
-const [account, accountAttrs] = defineField('account')
+const [phone, phoneAttrs] = defineField('phone')
 const [password, passwordAttrs] = defineField('password')
 const [remember] = defineField('remember')
 
@@ -60,7 +59,7 @@ const onSubmit = handleSubmit(async (values) => {
   serverError.value = null
   try {
     await auth.login({
-      account: values.account,
+      phone: values.phone,
       password: values.password,
       remember: values.remember,
     })
@@ -76,8 +75,8 @@ const onSubmit = handleSubmit(async (values) => {
 })
 
 function fillDemo() {
-  setFieldValue('account', 'demo')
-  setFieldValue('password', 'demo1234')
+  setFieldValue('phone', '13800138000')
+  setFieldValue('password', 'demo123456')
 }
 
 void isSubmitting
@@ -109,23 +108,25 @@ void isSubmitting
           </div>
 
           <form class="mt-7 space-y-4" novalidate @submit="onSubmit">
-            <!-- Account -->
+            <!-- Phone -->
             <div class="space-y-1.5">
-              <Label for="account">账号</Label>
+              <Label for="phone">手机号</Label>
               <div class="relative">
-                <IdCard class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Phone class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
                 <Input
-                  id="account"
-                  v-model="account"
-                  v-bind="accountAttrs"
-                  placeholder="工号 / 运行账号 / 邮箱"
+                  id="phone"
+                  v-model="phone"
+                  v-bind="phoneAttrs"
+                  type="tel"
+                  placeholder="请输入手机号"
                   class="h-10 pl-9"
-                  :class="cn(errors.account && 'border-destructive focus-visible:ring-destructive/40')"
-                  autocomplete="username"
+                  :class="cn(errors.phone && 'border-destructive focus-visible:ring-destructive/40')"
+                  autocomplete="tel"
+                  maxlength="11"
                 />
               </div>
-              <p v-if="errors.account" class="text-xs text-destructive">
-                {{ errors.account }}
+              <p v-if="errors.phone" class="text-xs text-destructive">
+                {{ errors.phone }}
               </p>
             </div>
 
