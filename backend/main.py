@@ -1,18 +1,19 @@
 from fastapi import FastAPI
-from core.config import config
 from api.user import user_router
-
+from rag.pasers.docx_parser import DocxParser
+from pathlib import Path
 app = FastAPI()
 
 app.include_router(user_router)
 
 
 @app.get("/")
-def read_root():
-    print(config.app.APP_NAME)
-    return {"Hello": "World"}
-
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: str | None = None):
-    return {"item_id": item_id, "q": q}
+def test():
+    current_file_path = Path(__file__).resolve()
+    # 向上两级目录到达项目根目录 (根据你的项目结构调整)
+    project_root = current_file_path.parent
+    file_path = str(project_root / "storage" / "锅炉运行规程.docx")
+    print(file_path)
+    parser = DocxParser()
+    result = parser.parse(file_path)
+    print(result)

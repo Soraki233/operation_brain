@@ -12,9 +12,9 @@ from schemas.response.users import (
     RegisterUserResSchema,
     CreateUserRoleResSchema,
     LoginUserResSchema,
+    GetUserInfoResSchema,
 )
 from core.response import success_response
-from schemas.service.user import GetUserInfoResSchema
 from core.deps import get_current_user
 from fastapi import Depends
 

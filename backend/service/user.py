@@ -18,7 +18,8 @@ from core.jwt import (
 import uuid
 from core.deps import get_current_user
 from fastapi import Depends
-from schemas.service.user import GetUserInfoResSchema, UserSchema
+from schemas.service.users import UserSchema
+from schemas.response.users import GetUserInfoResSchema
 from core.config import config
 import time
 from jose import JWTError
